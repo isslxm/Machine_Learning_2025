@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GDP Linear Regression Analysis 2020-2025</title>
+    <title>Student Performance Linear Regression Analysis</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
         * {
@@ -79,6 +79,18 @@
             font-weight: bold;
         }
 
+        .equation {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #667eea;
+            margin: 20px 0;
+            border: 2px solid #667eea;
+        }
+
         .explanation {
             background: #f8f9fa;
             padding: 30px;
@@ -103,30 +115,25 @@
             line-height: 1.8;
         }
 
-        .equation {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            font-size: 1.3em;
-            font-weight: bold;
-            color: #667eea;
-            margin: 20px 0;
-            border: 2px solid #667eea;
-        }
-
         .footer {
             text-align: center;
             margin-top: 30px;
             color: #7f8c8d;
             font-size: 0.9em;
         }
+
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>GDP Linear Regression Analysis</h1>
-        <div class="subtitle">World's Major Economies 2020-2025</div>
+        <h1>Student Performance Analysis</h1>
+        <div class="subtitle">Linear Regression: Hours Studied vs Performance Index</div>
 
         <div class="chart-container">
             <canvas id="regressionChart"></canvas>
@@ -136,7 +143,7 @@
             <div class="info-card">
                 <h3>Regression Coefficient</h3>
                 <div class="value" id="coefficient">-</div>
-                <small>Trillion USD per year</small>
+                <small>Points per study hour</small>
             </div>
             <div class="info-card">
                 <h3>R² Score</h3>
@@ -144,91 +151,71 @@
                 <small>Model accuracy</small>
             </div>
             <div class="info-card">
-                <h3>Total Observations</h3>
+                <h3>Total Students</h3>
                 <div class="value" id="observations">-</div>
                 <small>Data points analyzed</small>
             </div>
             <div class="info-card">
-                <h3>Countries Analyzed</h3>
-                <div class="value">15</div>
-                <small>Major economies</small>
+                <h3>Base Performance</h3>
+                <div class="value" id="intercept">-</div>
+                <small>With 0 study hours</small>
             </div>
         </div>
 
-        <div class="equation" id="equation">GDP = - × Year + -</div>
+        <div class="equation" id="equation">Performance Index = - × Hours Studied + -</div>
 
         <div class="explanation">
-            <h2>📊 What is Linear Regression?</h2>
+            <h2>Analysis Overview</h2>
             <p>
-                Linear regression is a statistical method that models the relationship between two variables by fitting a linear equation to observed data. In this analysis, we examine how GDP (Gross Domestic Product) changes over time for major world economies.
+                This linear regression analysis examines the relationship between <span class="highlight">study time</span> and <span class="highlight">academic performance</span> among students. Each blue dot represents an individual student's data, while the red line shows the linear trend predicted by our regression model.
             </p>
 
-            <h2>🎯 Understanding the Results</h2>
-            <p><strong>The Regression Equation:</strong> Shows the mathematical relationship between year and GDP. The coefficient indicates the average annual GDP growth across all countries.</p>
+            <h2>Key Findings</h2>
+            <p><strong>The Regression Equation:</strong> Shows how performance changes with each additional hour of study. The coefficient indicates the average performance increase per hour studied.</p>
             
-            <p><strong>R² Score (Coefficient of Determination):</strong> Measures how well the linear model fits the data:</p>
+            <p><strong>R² Score (Coefficient of Determination):</strong> Measures how well study hours predict performance:</p>
             <ul>
-                <li><strong>R² = 1.0:</strong> Perfect fit - the model explains 100% of the variation</li>
-                <li><strong>R² = 0.7-0.9:</strong> Strong relationship - good predictive power</li>
-                <li><strong>R² = 0.5-0.7:</strong> Moderate relationship - reasonable predictions</li>
-                <li><strong>R² < 0.5:</strong> Weak relationship - limited predictive value</li>
+                <li><strong>R² ≥ 0.8:</strong> Study hours are an excellent predictor of performance</li>
+                <li><strong>R² = 0.6-0.8:</strong> Study hours have a strong influence on performance</li>
+                <li><strong>R² = 0.4-0.6:</strong> Study hours moderately affect performance</li>
+                <li><strong>R² < 0.4:</strong> Other factors may be more important than study time</li>
             </ul>
 
-            <h2>💡 Key Insights</h2>
+            <h2>What This Means</h2>
             <p>
-                The blue dots represent actual GDP values for 15 countries over 6 years (2020-2025). The red line is our linear regression model that finds the best-fit straight line through these points. 
+                The linear model reveals a clear pattern: more study hours generally lead to better performance. However, the scatter of points around the line shows that study time isn't the only factor - teaching quality, prior knowledge, learning methods, motivation, and other variables also play important roles.
             </p>
-            <p>
-                The scatter pattern shows natural economic variations, including the impact of COVID-19 in 2020-2021. Despite these fluctuations, the linear trend reveals the overall growth trajectory of global GDP.
-            </p>
-
-            <h2>🌍 Countries Included</h2>
-            <p>USA, China, Japan, Germany, India, United Kingdom, France, Italy, Brazil, Canada, Russia, South Korea, Spain, Australia, Mexico</p>
         </div>
 
         <div class="footer">
-            <p>Linear Regression Analysis | GDP Data 2020-2025</p>
+            <p>Student Performance Linear Regression | Educational Data Analysis</p>
         </div>
     </div>
 
     <script>
-        // Set random seeds for reproducibility
+        // Seeded random number generator
         let seed = 42;
         function seededRandom() {
             seed = (seed * 9301 + 49297) % 233280;
             return seed / 233280;
         }
 
-        // Generate GDP data
-        const countries = ['USA', 'China', 'Japan', 'Germany', 'India', 'UK', 'France', 'Italy', 
-                          'Brazil', 'Canada', 'Russia', 'South Korea', 'Spain', 'Australia', 'Mexico'];
-        const years = [2020, 2021, 2022, 2023, 2024, 2025];
-        
-        const baseGDP = {
-            'USA': 20.95, 'China': 14.72, 'Japan': 4.94, 'Germany': 3.85, 'India': 3.18,
-            'UK': 2.83, 'France': 2.63, 'Italy': 2.11, 'Brazil': 1.61, 'Canada': 1.64,
-            'Russia': 1.48, 'South Korea': 1.81, 'Spain': 1.39, 'Australia': 1.55, 'Mexico': 1.29
-        };
+        // Generate student performance data
+        const n_students = 100;
+        let studyHours = [];
+        let performanceIndex = [];
 
-        let dataPoints = [];
-        let yearsData = [];
-        let gdpData = [];
-
-        countries.forEach(country => {
-            const base = baseGDP[country];
-            const growthRate = 0.02 + seededRandom() * 0.02; // 2-4% growth
+        for (let i = 0; i < n_students; i++) {
+            // Study hours between 1 and 10
+            const hours = 1 + seededRandom() * 9;
             
-            years.forEach((year, i) => {
-                let gdp = base * Math.pow(1 + growthRate, i) * (0.95 + seededRandom() * 0.1);
-                
-                if (year === 2020) gdp *= 0.92 + seededRandom() * 0.06;
-                else if (year === 2021) gdp *= 1.02 + seededRandom() * 0.06;
-                
-                dataPoints.push({x: year, y: gdp});
-                yearsData.push(year);
-                gdpData.push(gdp);
-            });
-        });
+            // Performance = base + (hours * effect) + random noise
+            // Base performance around 10, each hour adds ~10 points, plus random variation
+            const performance = 10 + (hours * 10) + (seededRandom() - 0.5) * 20;
+            
+            studyHours.push(hours);
+            performanceIndex.push(Math.max(0, Math.min(100, performance))); // Keep between 0-100
+        }
 
         // Calculate linear regression
         function linearRegression(x, y) {
@@ -255,36 +242,44 @@
             return 1 - (ssRes / ssTotal);
         }
 
-        const regression = linearRegression(yearsData, gdpData);
-        const predicted = yearsData.map(year => regression.slope * year + regression.intercept);
-        const r2 = calculateR2(gdpData, predicted);
+        // Perform regression
+        const regression = linearRegression(studyHours, performanceIndex);
+        const predicted = studyHours.map(hours => regression.slope * hours + regression.intercept);
+        const r2 = calculateR2(performanceIndex, predicted);
+
+        // Prepare data for chart
+        const dataPoints = studyHours.map((hours, i) => ({
+            x: hours,
+            y: performanceIndex[i]
+        }));
+
+        const regressionLine = [
+            {x: Math.min(...studyHours), y: regression.slope * Math.min(...studyHours) + regression.intercept},
+            {x: Math.max(...studyHours), y: regression.slope * Math.max(...studyHours) + regression.intercept}
+        ];
 
         // Update info cards
-        document.getElementById('coefficient').textContent = regression.slope.toFixed(4);
+        document.getElementById('coefficient').textContent = regression.slope.toFixed(2);
         document.getElementById('r2score').textContent = r2.toFixed(4);
-        document.getElementById('observations').textContent = dataPoints.length;
+        document.getElementById('observations').textContent = n_students;
+        document.getElementById('intercept').textContent = regression.intercept.toFixed(2);
         document.getElementById('equation').textContent = 
-            `GDP = ${regression.slope.toFixed(4)} × Year + ${regression.intercept.toFixed(2)}`;
+            `Performance Index = ${regression.slope.toFixed(2)} × Hours Studied + ${regression.intercept.toFixed(2)}`;
 
         // Create chart
         const ctx = document.getElementById('regressionChart').getContext('2d');
         
-        const regressionLine = [
-            {x: 2020, y: regression.slope * 2020 + regression.intercept},
-            {x: 2025, y: regression.slope * 2025 + regression.intercept}
-        ];
-
         new Chart(ctx, {
             type: 'scatter',
             data: {
                 datasets: [{
-                    label: 'GDP Data (Trillion USD)',
+                    label: 'Student Performance Data',
                     data: dataPoints,
-                    backgroundColor: 'rgba(102, 126, 234, 0.6)',
-                    borderColor: 'rgba(102, 126, 234, 1)',
+                    backgroundColor: 'rgba(52, 152, 219, 0.6)',
+                    borderColor: 'rgba(52, 152, 219, 1)',
                     borderWidth: 1,
-                    pointRadius: 5,
-                    pointHoverRadius: 7
+                    pointRadius: 6,
+                    pointHoverRadius: 8
                 }, {
                     label: 'Linear Regression Line',
                     data: regressionLine,
@@ -311,7 +306,7 @@
                     },
                     title: {
                         display: true,
-                        text: `Linear Regression: GDP Trend 2020-2025 | R² = ${r2.toFixed(4)}`,
+                        text: `Linear Regression Analysis | R² = ${r2.toFixed(4)}`,
                         font: {
                             size: 16,
                             weight: 'bold'
@@ -324,32 +319,41 @@
                         position: 'bottom',
                         title: {
                             display: true,
-                            text: 'Year',
+                            text: 'Hours Studied',
                             font: {
                                 size: 14,
                                 weight: 'bold'
                             }
                         },
-                        min: 2019.5,
-                        max: 2025.5,
-                        ticks: {
-                            stepSize: 1
-                        }
+                        min: 0,
+                        max: 11
                     },
                     y: {
                         title: {
                             display: true,
-                            text: 'GDP (Trillion USD)',
+                            text: 'Performance Index',
                             font: {
                                 size: 14,
                                 weight: 'bold'
                             }
                         },
-                        beginAtZero: false
+                        min: 0,
+                        max: 110
                     }
                 }
             }
         });
+
+        // Console output for additional insights
+        console.log('='.repeat(60));
+        console.log('STUDENT PERFORMANCE REGRESSION ANALYSIS');
+        console.log('='.repeat(60));
+        console.log(`Equation: Performance = ${regression.slope.toFixed(4)} × Hours + ${regression.intercept.toFixed(4)}`);
+        console.log(`R² Score: ${r2.toFixed(4)}`);
+        console.log(`\nInterpretation:`);
+        console.log(`- Each additional study hour increases performance by ${regression.slope.toFixed(2)} points on average`);
+        console.log(`- Base performance (0 hours): ${regression.intercept.toFixed(2)} points`);
+        console.log(`- Model explains ${(r2 * 100).toFixed(1)}% of performance variation`);
     </script>
 </body>
 </html>

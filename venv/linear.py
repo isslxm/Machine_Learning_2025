@@ -1,92 +1,172 @@
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import r2_score
-import random
+from sklearn.metrics import r2_score, mean_squared_error
 
-np.random.seed(42)
-random.seed(42)
+# ===== LOAD DATASET =====
+CSV_FILENAME = 'Student_Performance.csv'
 
-countries = ['USA', 'China', 'Japan', 'Germany', 'India', 'UK', 'France', 'Italy', 
-            'Brazil', 'Canada', 'Russia', 'South Korea', 'Spain', 'Australia', 'Mexico']
-years = [2020, 2021, 2022, 2023, 2024, 2025]
-
-# Базовые GDP значения в 2020 (в триллионах USD)
-base_gdp_values = {
-    'USA': 20.95, 'China': 14.72, 'Japan': 4.94, 'Germany': 3.85, 'India': 3.18,
-    'UK': 2.83, 'France': 2.63, 'Italy': 2.11, 'Brazil': 1.61, 'Canada': 1.64,
-    'Russia': 1.48, 'South Korea': 1.81, 'Spain': 1.39, 'Australia': 1.55, 'Mexico': 1.29
-}
-
-years_list = []
-gdp_list = []
-
-for country in countries:
-    base_gdp = base_gdp_values[country]
-    growth_rate = random.uniform(0.02, 0.04)  # темп роста 2-4% в год
+try:
+    df = pd.read_csv(CSV_FILENAME)
+    print("✅ Dataset loaded successfully!")
     
-    for i, year in enumerate(years):
-        # GDP с трендом роста и случайными колебаниями
-        gdp = base_gdp * ((1 + growth_rate) ** i) * random.uniform(0.95, 1.05)
-        
-        # Учитываем влияние COVID-19
-        if year == 2020:
-            gdp *= random.uniform(0.92, 0.98)
-        elif year == 2021:
-            gdp *= random.uniform(1.02, 1.08)
-            
-        years_list.append(year)
-        gdp_list.append(gdp)
+except FileNotFoundError:
+    print(f"❌ File '{CSV_FILENAME}' not found!")
+    print("\nPlease:")
+    print("1. Download the CSV from Kaggle")
+    print("2. Place it in the same folder as this script")
+    print("3. Update CSV_FILENAME variable if needed")
+    exit()
 
-# Конвертируем в numpy массивы
-X = np.array(years_list).reshape(-1, 1)  # годы
-y = np.array(gdp_list)  # GDP
+# ===== EXPLORE DATASET =====
+print(f"\n{'='*60}")
+print("DATASET OVERVIEW")
+print(f"{'='*60}")
+print(f"Shape: {df.shape[0]} rows, {df.shape[1]} columns")
+print(f"\nColumn names:")
+print(df.columns.tolist())
+print(f"\nFirst 5 rows:")
+print(df.head())
+print(f"\nData types:")
+print(df.dtypes)
+print(f"\nBasic statistics:")
+print(df.describe())
 
-print(f"{len(years_list)} Observations were created for {len(countries)} countries")
-print(f"Period: {min(years_list)}-{max(years_list)}")
+# ===== CONFIGURE YOUR VARIABLES =====
+X_COLUMN = 'Hours Studied'      # Independent variable (predictor)
+Y_COLUMN = 'Performance Index'   # Dependent variable (target)
 
+
+# ===== VALIDATE COLUMNS =====
+if X_COLUMN not in df.columns:
+    print(f"\n❌ ERROR: Column '{X_COLUMN}' not found!")
+    print(f"Available columns: {df.columns.tolist()}")
+    print("\nPlease update X_COLUMN variable in the code")
+    exit()
+
+if Y_COLUMN not in df.columns:
+    print(f"\n❌ ERROR: Column '{Y_COLUMN}' not found!")
+    print(f"Available columns: {df.columns.tolist()}")
+    print("\nPlease update Y_COLUMN variable in the code")
+    exit()
+
+# ===== DATA PREPROCESSING =====
+# Remove missing values
+df_clean = df[[X_COLUMN, Y_COLUMN]].dropna()
+print(f"\n🧹 Data cleaning: {len(df_clean)} rows remaining from {len(df)}")
+
+# Prepare data for regression
+X = df_clean[[X_COLUMN]].values  # 2D array
+y = df_clean[Y_COLUMN].values    # 1D array
+
+print(f"\n📊 Final dataset:")
+print(f"Number of observations: {len(X)}")
+print(f"X ({X_COLUMN}) range: {X.min():.2f} to {X.max():.2f}")
+print(f"Y ({Y_COLUMN}) range: {y.min():.2f} to {y.max():.2f}")
+
+# ===== LINEAR REGRESSION MODEL =====
 model = LinearRegression()
 model.fit(X, y)
 
-# Получаем коэффициенты
-intercept = model.intercept_
+# Get coefficients
 coefficient = model.coef_[0]
+intercept = model.intercept_
 
-# Предсказания
+# Make predictions
 y_pred = model.predict(X)
 
-# Метрики качества
+# Calculate metrics
 r2 = r2_score(y, y_pred)
+mse = mean_squared_error(y, y_pred)
+rmse = np.sqrt(mse)
 
-print(f"\nLinear Regression results:")
-print(f"Equotion: GDP = {coefficient:.4f} × year + {intercept:.2f}")
-print(f"R² = {r2:.4f}")
-print(f"Average annual GDP growth: {coefficient:.4f} trillion USD")
+# ===== PRINT RESULTS =====
+print(f"\n{'='*60}")
+print("LINEAR REGRESSION RESULTS")
+print(f"{'='*60}")
+print(f"Equation: {Y_COLUMN} = {coefficient:.4f} × {X_COLUMN} + {intercept:.4f}")
+print(f"\nCoefficient (slope): {coefficient:.4f}")
+print(f"Intercept: {intercept:.4f}")
+print(f"\nR² Score: {r2:.4f}")
+print(f"MSE: {mse:.4f}")
+print(f"RMSE: {rmse:.4f}")
 
+# Interpretation
+print(f"\n{'='*60}")
+print("INTERPRETATION")
+print(f"{'='*60}")
+if coefficient > 0:
+    print(f"✓ Positive relationship: As {X_COLUMN} increases by 1 unit,")
+    print(f"  {Y_COLUMN} increases by {coefficient:.4f} units on average.")
+else:
+    print(f"✓ Negative relationship: As {X_COLUMN} increases by 1 unit,")
+    print(f"  {Y_COLUMN} decreases by {abs(coefficient):.4f} units on average.")
+
+if r2 >= 0.8:
+    print(f"✓ R² = {r2:.4f}: Excellent model fit! Strong predictive power.")
+elif r2 >= 0.6:
+    print(f"✓ R² = {r2:.4f}: Good model fit. Reasonable predictions.")
+elif r2 >= 0.4:
+    print(f"⚠ R² = {r2:.4f}: Moderate fit. Limited predictive ability.")
+else:
+    print(f"⚠ R² = {r2:.4f}: Weak fit. Poor predictive ability.")
+
+# ===== VISUALIZATION (SINGLE PLOT) =====
 plt.figure(figsize=(12, 8))
 
-# Точки данных
-plt.scatter(years_list, gdp_list, alpha=0.6, color='steelblue', s=50, 
-           label='GDP data by country', edgecolor='white', linewidth=0.5)
+# Scatter plot - actual data
+plt.scatter(X, y, alpha=0.6, s=60, color='steelblue', 
+           edgecolor='white', linewidth=0.8,
+           label='Actual Data')
 
-# Линия регрессии
-x_line = np.array([2020, 2025]).reshape(-1, 1)
+# Regression line
+x_line = np.linspace(X.min(), X.max(), 100).reshape(-1, 1)
 y_line = model.predict(x_line)
-plt.plot([2020, 2025], y_line, 'red', linewidth=3, 
-         label=f'Linear regression\nGDP = {coefficient:.4f}×year + {intercept:.2f}')
+plt.plot(x_line, y_line, color='red', linewidth=3,
+         label=f'Linear Regression\n{Y_COLUMN} = {coefficient:.4f}×{X_COLUMN} + {intercept:.4f}')
 
-plt.xlabel('Year', fontsize=14)
-plt.ylabel('GDP (trillion USD)', fontsize=14)
-plt.title('Linear regression: GDP of world countries 2020-2025', fontsize=16, fontweight='bold')
-plt.legend(fontsize=12)
-plt.grid(True, alpha=0.3)
+# Labels and title
+plt.xlabel(X_COLUMN, fontsize=14, fontweight='bold')
+plt.ylabel(Y_COLUMN, fontsize=14, fontweight='bold')
+plt.title(f'Linear Regression: {Y_COLUMN} vs {X_COLUMN}\nR² = {r2:.4f}', 
+         fontsize=16, fontweight='bold', pad=20)
 
-plt.text(0.05, 0.95, f'R² = {r2:.4f}', transform=plt.gca().transAxes, 
-         fontsize=14, bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
+# Legend
+plt.legend(fontsize=11, loc='best', framealpha=0.9)
 
+# Grid
+plt.grid(True, alpha=0.3, linestyle='--', linewidth=0.8)
+
+# Add text box with metrics
+textstr = f'R² = {r2:.4f}\nRMSE = {rmse:.4f}\nSamples: {len(X)}'
+props = dict(boxstyle='round', facecolor='wheat', alpha=0.85)
+plt.text(0.05, 0.95, textstr, transform=plt.gca().transAxes, 
+         fontsize=12, verticalalignment='top', bbox=props)
+
+# Styling
 plt.tight_layout()
 plt.show()
 
-print(f"\nInterpretation:")
-print(f"The model shows that GDP grows on average of {coefficient:.4f} trillions USD every year")
-print(f"R² = {r2:.4f} means that {r2*100:.1f}% GDP changes can be explained by the tempopary trend")
+print(f"\n✅ Analysis complete!")
+
+# ===== OPTIONAL: MAKE PREDICTIONS =====
+print(f"\n{'='*60}")
+print("EXAMPLE PREDICTIONS")
+print(f"{'='*60}")
+
+# Generate sample predictions
+x_min, x_max = X.min()[0], X.max()[0]
+sample_values = np.linspace(x_min, x_max, 5)
+
+for x_val in sample_values:
+    y_predicted = model.predict([[x_val]])[0]
+    print(f"When {X_COLUMN} = {x_val:.2f} → Predicted {Y_COLUMN} = {y_predicted:.2f}")
+
+# ===== SAVE RESULTS =====
+results_df = df_clean.copy()
+results_df['Predicted'] = y_pred
+results_df['Residual'] = y - y_pred
+
+results_df.to_csv('regression_results.csv', index=False)
+print(f"\n💾 Results saved to 'regression_results.csv'")
