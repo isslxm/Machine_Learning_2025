@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Performance Linear Regression Analysis</title>
+    <title>Multiple Linear Regression</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
         * {
@@ -42,6 +42,15 @@
             font-size: 1.1em;
         }
 
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.1em;
+        }
+
         .chart-container {
             position: relative;
             height: 500px;
@@ -51,22 +60,23 @@
             border-radius: 15px;
         }
 
-        .info-grid {
+        .metrics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
         }
 
-        .info-card {
+        .metric-card {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 25px;
             border-radius: 15px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            text-align: center;
         }
 
-        .info-card h3 {
+        .metric-card h3 {
             font-size: 0.9em;
             margin-bottom: 10px;
             opacity: 0.9;
@@ -74,21 +84,52 @@
             letter-spacing: 1px;
         }
 
-        .info-card .value {
-            font-size: 2em;
+        .metric-card .value {
+            font-size: 2.5em;
             font-weight: bold;
         }
 
-        .equation {
+        .coefficients-section {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border-left: 5px solid #667eea;
+        }
+
+        .coefficients-section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .coefficients-table {
+            width: 100%;
+            border-collapse: collapse;
             background: white;
-            padding: 20px;
             border-radius: 10px;
-            text-align: center;
-            font-size: 1.3em;
+            overflow: hidden;
+        }
+
+        .coefficients-table th,
+        .coefficients-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .coefficients-table th {
+            background: #667eea;
+            color: white;
             font-weight: bold;
-            color: #667eea;
-            margin: 20px 0;
-            border: 2px solid #667eea;
+        }
+
+        .coefficients-table tr:hover {
+            background: #e8eaf6;
+        }
+
+        .coefficients-table tr:last-child td {
+            border-bottom: none;
         }
 
         .explanation {
@@ -101,6 +142,12 @@
         .explanation h2 {
             color: #2c3e50;
             margin-bottom: 15px;
+            font-size: 1.3em;
+            margin-top: 20px;
+        }
+
+        .explanation h2:first-child {
+            margin-top: 0;
         }
 
         .explanation p {
@@ -109,10 +156,11 @@
             margin-bottom: 15px;
         }
 
-        .explanation ul {
-            margin-left: 20px;
-            color: #555;
-            line-height: 1.8;
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
         }
 
         .footer {
@@ -122,238 +170,208 @@
             font-size: 0.9em;
         }
 
-        .highlight {
-            background: #fff3cd;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: 600;
+        .loading {
+            text-align: center;
+            font-size: 1.2em;
+            color: #667eea;
+            padding: 40px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Student Performance Analysis</h1>
-        <div class="subtitle">Linear Regression: Hours Studied vs Performance Index</div>
+        <h1>Multiple Linear Regression Analysis</h1>
+        <div class="subtitle">Student Performance Prediction Model</div>
 
-        <div class="chart-container">
-            <canvas id="regressionChart"></canvas>
+        <div id="loadingContainer" class="loading">
+            Loading data...
         </div>
 
-        <div class="info-grid">
-            <div class="info-card">
-                <h3>Regression Coefficient</h3>
-                <div class="value" id="coefficient">-</div>
-                <small>Points per study hour</small>
+        <div id="mainContent" style="display: none;">
+            <div class="chart-container">
+                <canvas id="regressionChart"></canvas>
             </div>
-            <div class="info-card">
-                <h3>R² Score</h3>
-                <div class="value" id="r2score">-</div>
-                <small>Model accuracy</small>
+
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <h3>R² Score</h3>
+                    <div class="value" id="r2score">-</div>
+                    <small>Model Accuracy</small>
+                </div>
+                <div class="metric-card">
+                    <h3>RMSE</h3>
+                    <div class="value" id="rmse">-</div>
+                    <small>Average Error</small>
+                </div>
+                <div class="metric-card">
+                    <h3>MSE</h3>
+                    <div class="value" id="mse">-</div>
+                    <small>Mean Squared Error</small>
+                </div>
+                <div class="metric-card">
+                    <h3>Samples</h3>
+                    <div class="value" id="samples">-</div>
+                    <small>Test Data Points</small>
+                </div>
             </div>
-            <div class="info-card">
-                <h3>Total Students</h3>
-                <div class="value" id="observations">-</div>
-                <small>Data points analyzed</small>
+
+            <div class="explanation">
+                <h2>Understanding the Graph</h2>
+                <p>
+                    The <span class="highlight">Actual vs Predicted</span> scatter plot shows how well our model performs. 
+                    Each blue dot represents a student, with X-axis showing <span class="highlight">actual performance</span> 
+                    and Y-axis showing <span class="highlight">predicted performance</span>.
+                </p>
+
+                <h2>Perfect Prediction Line</h2>
+                <p>
+                    The red line represents <span class="highlight">y = x</span> (perfect predictions). 
+                    When actual equals predicted, points fall on this line. 
+                    Points <span class="highlight">close to the line</span> = accurate predictions ✓
+                    <br>
+                    Points <span class="highlight">far from the line</span> = prediction errors ✗
+                </p>
+
+                <h2>Metrics Explained</h2>
+                <p>
+                    <strong>R² Score:</strong> Proportion of variance explained (0 to 1). Higher is better.<br>
+                    <strong>RMSE:</strong> Average prediction error in original units. Lower is better.<br>
+                    <strong>MSE:</strong> Mean of squared errors. RMSE = √MSE.
+                </p>
+
+                <h2>Model Quality</h2>
+                <p>
+                    R² ≥ 0.8 = Excellent | R² 0.6-0.8 = Good | R² 0.4-0.6 = Moderate | R² < 0.4 = Weak
+                </p>
             </div>
-            <div class="info-card">
-                <h3>Base Performance</h3>
-                <div class="value" id="intercept">-</div>
-                <small>With 0 study hours</small>
+
+            <div class="footer">
+                <p>Multiple Linear Regression | Student Performance Analysis</p>
             </div>
         </div>
 
-        <div class="equation" id="equation">Performance Index = - × Hours Studied + -</div>
-
-        <div class="explanation">
-            <h2>Analysis Overview</h2>
-            <p>
-                This linear regression analysis examines the relationship between <span class="highlight">study time</span> and <span class="highlight">academic performance</span> among students. Each blue dot represents an individual student's data, while the red line shows the linear trend predicted by our regression model.
-            </p>
-
-            <h2>Key Findings</h2>
-            <p><strong>The Regression Equation:</strong> Shows how performance changes with each additional hour of study. The coefficient indicates the average performance increase per hour studied.</p>
-            
-            <p><strong>R² Score (Coefficient of Determination):</strong> Measures how well study hours predict performance:</p>
-            <ul>
-                <li><strong>R² ≥ 0.8:</strong> Study hours are an excellent predictor of performance</li>
-                <li><strong>R² = 0.6-0.8:</strong> Study hours have a strong influence on performance</li>
-                <li><strong>R² = 0.4-0.6:</strong> Study hours moderately affect performance</li>
-                <li><strong>R² < 0.4:</strong> Other factors may be more important than study time</li>
-            </ul>
-
-            <h2>What This Means</h2>
-            <p>
-                The linear model reveals a clear pattern: more study hours generally lead to better performance. However, the scatter of points around the line shows that study time isn't the only factor - teaching quality, prior knowledge, learning methods, motivation, and other variables also play important roles.
-            </p>
-        </div>
-
-        <div class="footer">
-            <p>Student Performance Linear Regression | Educational Data Analysis</p>
+        <div id="errorContainer" style="display: none;">
+            <div class="error" id="errorMessage"></div>
         </div>
     </div>
 
     <script>
-        // Seeded random number generator
-        let seed = 42;
-        function seededRandom() {
-            seed = (seed * 9301 + 49297) % 233280;
-            return seed / 233280;
+        // Load JSON data
+        fetch('regression_data.json')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Could not load regression_data.json. Make sure to run the Python script first!');
+                }
+                return response.json();
+            })
+            .then(data => {
+                displayResults(data);
+            })
+            .catch(error => {
+                document.getElementById('loadingContainer').style.display = 'none';
+                document.getElementById('errorContainer').style.display = 'block';
+                document.getElementById('errorMessage').textContent = 
+                    '⚠️ Error: ' + error.message + '\n\n1. Run the Python script to generate regression_data.json\n2. Make sure both files are in the same folder';
+                console.error('Error:', error);
+            });
+
+        function displayResults(data) {
+            // Hide loading, show content
+            document.getElementById('loadingContainer').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+
+            // Update metrics
+            document.getElementById('r2score').textContent = data.r2.toFixed(4);
+            document.getElementById('rmse').textContent = data.rmse.toFixed(4);
+            document.getElementById('mse').textContent = data.mse.toFixed(4);
+            document.getElementById('samples').textContent = data.n_samples;
+
+            // Create chart
+            createChart(data);
         }
 
-        // Generate student performance data
-        const n_students = 100;
-        let studyHours = [];
-        let performanceIndex = [];
+        function createChart(data) {
+            // Prepare data points
+            const dataPoints = data.actual.map((actual, i) => ({
+                x: actual,
+                y: data.predicted[i]
+            }));
 
-        for (let i = 0; i < n_students; i++) {
-            // Study hours between 1 and 10
-            const hours = 1 + seededRandom() * 9;
+            // Perfect prediction line
+            const minVal = Math.min(...data.actual, ...data.predicted);
+            const maxVal = Math.max(...data.actual, ...data.predicted);
+
+            const perfectLine = [
+                {x: minVal, y: minVal},
+                {x: maxVal, y: maxVal}
+            ];
+
+            // Create chart
+            const ctx = document.getElementById('regressionChart').getContext('2d');
             
-            // Performance = base + (hours * effect) + random noise
-            // Base performance around 10, each hour adds ~10 points, plus random variation
-            const performance = 10 + (hours * 10) + (seededRandom() - 0.5) * 20;
-            
-            studyHours.push(hours);
-            performanceIndex.push(Math.max(0, Math.min(100, performance))); // Keep between 0-100
-        }
-
-        // Calculate linear regression
-        function linearRegression(x, y) {
-            const n = x.length;
-            let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
-            
-            for (let i = 0; i < n; i++) {
-                sumX += x[i];
-                sumY += y[i];
-                sumXY += x[i] * y[i];
-                sumXX += x[i] * x[i];
-            }
-            
-            const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-            const intercept = (sumY - slope * sumX) / n;
-            
-            return { slope, intercept };
-        }
-
-        function calculateR2(actual, predicted) {
-            const mean = actual.reduce((a, b) => a + b) / actual.length;
-            const ssTotal = actual.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0);
-            const ssRes = actual.reduce((sum, val, i) => sum + Math.pow(val - predicted[i], 2), 0);
-            return 1 - (ssRes / ssTotal);
-        }
-
-        // Perform regression
-        const regression = linearRegression(studyHours, performanceIndex);
-        const predicted = studyHours.map(hours => regression.slope * hours + regression.intercept);
-        const r2 = calculateR2(performanceIndex, predicted);
-
-        // Prepare data for chart
-        const dataPoints = studyHours.map((hours, i) => ({
-            x: hours,
-            y: performanceIndex[i]
-        }));
-
-        const regressionLine = [
-            {x: Math.min(...studyHours), y: regression.slope * Math.min(...studyHours) + regression.intercept},
-            {x: Math.max(...studyHours), y: regression.slope * Math.max(...studyHours) + regression.intercept}
-        ];
-
-        // Update info cards
-        document.getElementById('coefficient').textContent = regression.slope.toFixed(2);
-        document.getElementById('r2score').textContent = r2.toFixed(4);
-        document.getElementById('observations').textContent = n_students;
-        document.getElementById('intercept').textContent = regression.intercept.toFixed(2);
-        document.getElementById('equation').textContent = 
-            `Performance Index = ${regression.slope.toFixed(2)} × Hours Studied + ${regression.intercept.toFixed(2)}`;
-
-        // Create chart
-        const ctx = document.getElementById('regressionChart').getContext('2d');
-        
-        new Chart(ctx, {
-            type: 'scatter',
-            data: {
-                datasets: [{
-                    label: 'Student Performance Data',
-                    data: dataPoints,
-                    backgroundColor: 'rgba(52, 152, 219, 0.6)',
-                    borderColor: 'rgba(52, 152, 219, 1)',
-                    borderWidth: 1,
-                    pointRadius: 6,
-                    pointHoverRadius: 8
-                }, {
-                    label: 'Linear Regression Line',
-                    data: regressionLine,
-                    type: 'line',
-                    borderColor: 'rgba(231, 76, 60, 1)',
-                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                    borderWidth: 3,
-                    pointRadius: 0,
-                    fill: false
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top',
-                        labels: {
-                            font: {
-                                size: 14
-                            }
+            new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Student Predictions',
+                            data: dataPoints,
+                            backgroundColor: 'rgba(52, 152, 219, 0.6)',
+                            borderColor: 'rgba(52, 152, 219, 1)',
+                            borderWidth: 1,
+                            pointRadius: 6,
+                            pointHoverRadius: 8
+                        },
+                        {
+                            label: 'Perfect Prediction (y=x)',
+                            data: perfectLine,
+                            type: 'line',
+                            borderColor: 'rgba(231, 76, 60, 1)',
+                            backgroundColor: 'transparent',
+                            borderWidth: 3,
+                            pointRadius: 0,
+                            fill: false
                         }
-                    },
-                    title: {
-                        display: true,
-                        text: `Linear Regression Analysis | R² = ${r2.toFixed(4)}`,
-                        font: {
-                            size: 16,
-                            weight: 'bold'
-                        }
-                    }
+                    ]
                 },
-                scales: {
-                    x: {
-                        type: 'linear',
-                        position: 'bottom',
-                        title: {
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
                             display: true,
-                            text: 'Hours Studied',
-                            font: {
-                                size: 14,
-                                weight: 'bold'
+                            position: 'top',
+                            labels: {
+                                font: { size: 14 }
                             }
                         },
-                        min: 0,
-                        max: 11
+                        title: {
+                            display: true,
+                            text: `Linear Regression: Actual vs Predicted | R² = ${data.r2.toFixed(4)}`,
+                            font: { size: 16, weight: 'bold' }
+                        }
                     },
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'Performance Index',
-                            font: {
-                                size: 14,
-                                weight: 'bold'
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom',
+                            title: {
+                                display: true,
+                                text: 'Actual Performance Index',
+                                font: { size: 14, weight: 'bold' }
                             }
                         },
-                        min: 0,
-                        max: 110
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Predicted Performance Index',
+                                font: { size: 14, weight: 'bold' }
+                            }
+                        }
                     }
                 }
-            }
-        });
-
-        // Console output for additional insights
-        console.log('='.repeat(60));
-        console.log('STUDENT PERFORMANCE REGRESSION ANALYSIS');
-        console.log('='.repeat(60));
-        console.log(`Equation: Performance = ${regression.slope.toFixed(4)} × Hours + ${regression.intercept.toFixed(4)}`);
-        console.log(`R² Score: ${r2.toFixed(4)}`);
-        console.log(`\nInterpretation:`);
-        console.log(`- Each additional study hour increases performance by ${regression.slope.toFixed(2)} points on average`);
-        console.log(`- Base performance (0 hours): ${regression.intercept.toFixed(2)} points`);
-        console.log(`- Model explains ${(r2 * 100).toFixed(1)}% of performance variation`);
+            });
+        }
     </script>
 </body>
 </html>
